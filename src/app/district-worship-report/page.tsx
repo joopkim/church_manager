@@ -333,9 +333,6 @@ export default function DistrictWorshipReportPage() {
               value={worshipDate}
             />
           </label>
-          <p className="mt-2 rounded-xl bg-surface-soft px-4 py-3 text-lg font-semibold">
-            선택한 날짜는 {computedWeekday}, {dayKind} 모임입니다.
-          </p>
 
           <div className="mt-5">
             <div className="flex items-center gap-2">
