@@ -3,9 +3,12 @@ node_modules/
 dist/
 build/
 .next/
+out/
 .vite/
 coverage/
+.vercel/
 .env
 .env.*
 !.env.example
 *.log
+*.tsbuildinfo

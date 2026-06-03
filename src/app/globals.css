@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafaf7;
+  --foreground: #24211d;
+  --canvas: #ffffff;
+  --surface: #f6f5f1;
+  --surface-soft: #fbfaf7;
+  --hairline: #e6e1d8;
+  --hairline-strong: #cfc7ba;
+  --muted: #79746b;
+  --primary: #2f7d6d;
+  --primary-pressed: #256657;
+  --success: #2f8f5b;
+  --warning: #c47a22;
+  --error: #c75c5c;
+  --tint-mint: #ddf2e5;
+  --tint-yellow: #fef4cc;
+  --tint-sky: #dcecf8;
+  --tint-rose: #fde0ec;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-tint-mint: var(--tint-mint);
+  --color-tint-yellow: var(--tint-yellow);
+  --color-tint-sky: var(--tint-sky);
+  --color-tint-rose: var(--tint-rose);
+  --font-sans: Inter, Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
