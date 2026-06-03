@@ -11,6 +11,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 
 const summaryCards = [
   {
@@ -49,24 +50,28 @@ const quickActions = [
     note: "구역 모임 참석을 바로 표시",
     icon: CheckCircle2,
     style: "bg-primary text-white",
+    href: "/district-worship-report",
   },
   {
     label: "음성 메모",
     note: "기도제목과 나눔을 말로 기록",
     icon: Mic,
     style: "bg-tint-yellow text-foreground",
+    href: "/district-worship-report",
   },
   {
     label: "성도 찾기",
     note: "이름으로 빠르게 확인",
     icon: Search,
     style: "bg-tint-sky text-foreground",
+    href: "#",
   },
   {
     label: "새 성도",
     note: "기본 정보만 먼저 등록",
     icon: Plus,
     style: "bg-tint-mint text-foreground",
+    href: "#",
   },
 ];
 
@@ -149,8 +154,9 @@ export default function Home() {
             const Icon = action.icon;
 
             return (
-              <button
+              <Link
                 className={`min-h-32 rounded-xl p-4 text-left shadow-sm ${action.style}`}
+                href={action.href}
                 key={action.label}
               >
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70 text-foreground">
@@ -162,7 +168,7 @@ export default function Home() {
                 <span className="mt-1 block text-base leading-6 opacity-80">
                   {action.note}
                 </span>
-              </button>
+              </Link>
             );
           })}
         </section>
@@ -259,13 +265,19 @@ export default function Home() {
                       </div>
                     </dl>
                     <div className="mt-5 grid grid-cols-2 gap-3">
-                      <button className="h-14 rounded-xl border border-hairline-strong bg-canvas text-lg font-semibold">
+                      <Link
+                        className="flex h-14 items-center justify-center rounded-xl border border-hairline-strong bg-canvas text-lg font-semibold"
+                        href="/district-worship-report"
+                      >
                         출석 체크
-                      </button>
-                      <button className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-primary text-lg font-semibold text-white">
+                      </Link>
+                      <Link
+                        className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-primary text-lg font-semibold text-white"
+                        href="/district-worship-report"
+                      >
                         <Mic size={22} />
                         음성 메모
-                      </button>
+                      </Link>
                     </div>
                   </article>
                 ))}
