@@ -3,11 +3,16 @@
 import Link from "next/link";
 import {
   ArrowLeft,
+  CalendarDays,
   Check,
   CircleDollarSign,
+  Clock,
+  Home,
   Mic,
   MicOff,
+  MapPin,
   Save,
+  UserRound,
   Users,
   X,
 } from "lucide-react";
@@ -70,8 +75,19 @@ const riskStyle: Record<RiskLevel, string> = {
 const defaultAttendance = (risk: RiskLevel) => risk !== "red";
 
 const quickAmounts = [10000, 20000, 30000, 50000];
+const weekdays = ["주일", "월", "화", "수", "목", "금", "토"];
+const startTimes = ["오전 10:00", "오전 11:00", "오후 1:00", "오후 2:00", "오후 7:00", "오후 8:00"];
+const placeOptions = ["교회", "구역원 가정", "기타 외부"];
+const leaderOptions = ["구역장", "직접 입력"];
 
 export default function DistrictWorshipReportPage() {
+  const [worshipDate, setWorshipDate] = useState("2026-06-07");
+  const [weekday, setWeekday] = useState("주일");
+  const [startTime, setStartTime] = useState("오후 2:00");
+  const [placeType, setPlaceType] = useState("구역원 가정");
+  const [customPlace, setCustomPlace] = useState("");
+  const [leaderType, setLeaderType] = useState("구역장");
+  const [customLeader, setCustomLeader] = useState("");
   const [attendance, setAttendance] = useState<Record<number, boolean>>(() =>
     Object.fromEntries(members.map((member) => [member.id, defaultAttendance(member.risk)])),
   );
@@ -218,7 +234,9 @@ export default function DistrictWorshipReportPage() {
 
       <section className="mx-auto max-w-3xl px-4 py-5">
         <div className="rounded-xl border border-hairline bg-canvas p-5">
-          <p className="text-lg text-muted">2026년 6월 첫째 주</p>
+          <p className="text-lg text-muted">
+            {worshipDate} {weekday} {startTime}
+          </p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-tint-mint p-4">
               <p className="text-base text-muted">출석</p>
@@ -230,6 +248,133 @@ export default function DistrictWorshipReportPage() {
             </div>
           </div>
         </div>
+
+        <section className="mt-5 rounded-xl border border-hairline bg-canvas p-5">
+          <div className="flex items-center gap-3">
+            <CalendarDays className="text-primary" size={28} />
+            <div>
+              <h2 className="text-2xl font-semibold">구역예배 정보</h2>
+              <p className="mt-1 text-base leading-6 text-muted">
+                날짜, 장소, 인도자를 먼저 확인합니다.
+              </p>
+            </div>
+          </div>
+
+          <label className="mt-5 block">
+            <span className="text-lg font-semibold">예배 일자</span>
+            <input
+              className="mt-2 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
+              onChange={(event) => setWorshipDate(event.target.value)}
+              type="date"
+              value={worshipDate}
+            />
+          </label>
+
+          <div className="mt-5">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="text-muted" size={22} />
+              <p className="text-lg font-semibold">요일 선택</p>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {weekdays.map((day) => (
+                <button
+                  className={`min-h-14 rounded-xl border px-2 text-xl font-semibold ${
+                    weekday === day
+                      ? "border-primary bg-primary text-white"
+                      : "border-hairline-strong bg-canvas"
+                  }`}
+                  key={day}
+                  onClick={() => setWeekday(day)}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <div className="flex items-center gap-2">
+              <Clock className="text-muted" size={22} />
+              <p className="text-lg font-semibold">시작시간 선택</p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {startTimes.map((time) => (
+                <button
+                  className={`min-h-16 rounded-xl border px-3 text-xl font-semibold ${
+                    startTime === time
+                      ? "border-primary bg-primary text-white"
+                      : "border-hairline-strong bg-canvas"
+                  }`}
+                  key={time}
+                  onClick={() => setStartTime(time)}
+                >
+                  {time}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-hairline pt-5">
+            <div className="flex items-center gap-2">
+              <MapPin className="text-muted" size={22} />
+              <p className="text-lg font-semibold">구역예배 장소</p>
+            </div>
+            <div className="mt-3 grid gap-3">
+              {placeOptions.map((place) => (
+                <button
+                  className={`flex min-h-16 items-center gap-3 rounded-xl border px-4 text-left text-xl font-semibold ${
+                    placeType === place
+                      ? "border-primary bg-primary text-white"
+                      : "border-hairline-strong bg-canvas"
+                  }`}
+                  key={place}
+                  onClick={() => setPlaceType(place)}
+                >
+                  <Home size={24} />
+                  {place}
+                </button>
+              ))}
+            </div>
+            {placeType === "기타 외부" && (
+              <input
+                className="mt-3 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
+                onChange={(event) => setCustomPlace(event.target.value)}
+                placeholder="장소를 입력하세요"
+                value={customPlace}
+              />
+            )}
+          </div>
+
+          <div className="mt-6 border-t border-hairline pt-5">
+            <div className="flex items-center gap-2">
+              <UserRound className="text-muted" size={22} />
+              <p className="text-lg font-semibold">인도자</p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {leaderOptions.map((leader) => (
+                <button
+                  className={`min-h-16 rounded-xl border px-3 text-xl font-semibold ${
+                    leaderType === leader
+                      ? "border-primary bg-primary text-white"
+                      : "border-hairline-strong bg-canvas"
+                  }`}
+                  key={leader}
+                  onClick={() => setLeaderType(leader)}
+                >
+                  {leader}
+                </button>
+              ))}
+            </div>
+            {leaderType === "직접 입력" && (
+              <input
+                className="mt-3 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
+                onChange={(event) => setCustomLeader(event.target.value)}
+                placeholder="인도자 이름"
+                value={customLeader}
+              />
+            )}
+          </div>
+        </section>
 
         <section className="mt-5 rounded-xl border border-hairline bg-canvas p-5">
           <div className="flex items-center gap-3">
