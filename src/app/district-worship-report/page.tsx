@@ -78,20 +78,16 @@ const quickAmounts = [10000, 20000, 30000, 50000];
 const weekdayLabels = ["주일", "월", "화", "수", "목", "금", "토"];
 const timePeriods = [
   {
-    label: "주중 오전",
-    note: "평일 12시 전",
+    label: "오전",
+    note: "12시 전",
   },
   {
-    label: "주중 오후",
-    note: "평일 12시~6시",
+    label: "오후",
+    note: "12시~6시",
   },
   {
-    label: "주중 저녁",
-    note: "평일 6시 이후",
-  },
-  {
-    label: "주일",
-    note: "주일 모임",
+    label: "저녁",
+    note: "6시 이후",
   },
 ];
 const placeOptions = ["교회", "구역원 가정", "기타 외부"];
@@ -99,7 +95,7 @@ const leaderOptions = ["구역장", "직접 입력"];
 
 export default function DistrictWorshipReportPage() {
   const [worshipDate, setWorshipDate] = useState("2026-06-07");
-  const [timePeriod, setTimePeriod] = useState("주일");
+  const [timePeriod, setTimePeriod] = useState("오후");
   const [placeType, setPlaceType] = useState("구역원 가정");
   const [customPlace, setCustomPlace] = useState("");
   const [leaderType, setLeaderType] = useState("구역장");
@@ -129,6 +125,7 @@ export default function DistrictWorshipReportPage() {
     }
     return weekdayLabels[date.getDay()];
   }, [worshipDate]);
+  const dayKind = computedWeekday === "주일" ? "주일" : "평일";
 
   const counts = useMemo(() => {
     const present = Object.values(attendance).filter(Boolean).length;
@@ -299,7 +296,7 @@ export default function DistrictWorshipReportPage() {
       <section className="mx-auto max-w-3xl px-4 py-5">
         <div className="rounded-xl border border-hairline bg-canvas p-5">
           <p className="text-lg text-muted">
-            {worshipDate} {computedWeekday} · {timePeriod}
+            {worshipDate} {computedWeekday} · {dayKind} {timePeriod}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-tint-mint p-4">
@@ -337,7 +334,7 @@ export default function DistrictWorshipReportPage() {
             />
           </label>
           <p className="mt-2 rounded-xl bg-surface-soft px-4 py-3 text-lg font-semibold">
-            선택한 날짜는 {computedWeekday}입니다.
+            선택한 날짜는 {computedWeekday}, {dayKind} 모임입니다.
           </p>
 
           <div className="mt-5">
