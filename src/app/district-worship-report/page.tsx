@@ -78,19 +78,20 @@ const quickAmounts = [10000, 20000, 30000, 50000];
 const weekdayLabels = ["주일", "월", "화", "수", "목", "금", "토"];
 const timePeriods = [
   {
-    label: "오전",
-    note: "12시 전",
-    times: ["오전 9:00", "오전 10:00", "오전 11:00"],
+    label: "주중 오전",
+    note: "평일 12시 전",
   },
   {
-    label: "오후",
-    note: "12시~6시",
-    times: ["오후 1:00", "오후 2:00", "오후 3:00", "오후 5:00"],
+    label: "주중 오후",
+    note: "평일 12시~6시",
   },
   {
-    label: "저녁",
-    note: "6시 이후",
-    times: ["오후 7:00", "오후 8:00", "오후 9:00"],
+    label: "주중 저녁",
+    note: "평일 6시 이후",
+  },
+  {
+    label: "주일",
+    note: "주일 모임",
   },
 ];
 const placeOptions = ["교회", "구역원 가정", "기타 외부"];
@@ -98,8 +99,7 @@ const leaderOptions = ["구역장", "직접 입력"];
 
 export default function DistrictWorshipReportPage() {
   const [worshipDate, setWorshipDate] = useState("2026-06-07");
-  const [timePeriod, setTimePeriod] = useState("오후");
-  const [startTime, setStartTime] = useState("오후 2:00");
+  const [timePeriod, setTimePeriod] = useState("주일");
   const [placeType, setPlaceType] = useState("구역원 가정");
   const [customPlace, setCustomPlace] = useState("");
   const [leaderType, setLeaderType] = useState("구역장");
@@ -122,7 +122,6 @@ export default function DistrictWorshipReportPage() {
   const [saveMessage, setSaveMessage] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  const selectedTimePeriod = timePeriods.find((period) => period.label === timePeriod) ?? timePeriods[1];
   const computedWeekday = useMemo(() => {
     const date = new Date(`${worshipDate}T00:00:00`);
     if (Number.isNaN(date.getTime())) {
@@ -300,7 +299,7 @@ export default function DistrictWorshipReportPage() {
       <section className="mx-auto max-w-3xl px-4 py-5">
         <div className="rounded-xl border border-hairline bg-canvas p-5">
           <p className="text-lg text-muted">
-            {worshipDate} {computedWeekday} {startTime}
+            {worshipDate} {computedWeekday} · {timePeriod}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-tint-mint p-4">
@@ -357,37 +356,11 @@ export default function DistrictWorshipReportPage() {
                   key={period.label}
                   onClick={() => {
                     setTimePeriod(period.label);
-                    setStartTime(period.times[0]);
                     markUnsaved();
                   }}
                 >
                   <span className="block">{period.label}</span>
                   <span className="mt-1 block text-base opacity-80">{period.note}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-5">
-            <div className="flex items-center gap-2">
-              <Clock className="text-muted" size={22} />
-              <p className="text-lg font-semibold">시작시간 선택</p>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {selectedTimePeriod.times.map((time) => (
-                <button
-                  className={`min-h-16 rounded-xl border px-3 text-xl font-semibold ${
-                    startTime === time
-                      ? "border-primary bg-primary text-white"
-                      : "border-hairline-strong bg-canvas"
-                  }`}
-                  key={time}
-                  onClick={() => {
-                    setStartTime(time);
-                    markUnsaved();
-                  }}
-                >
-                  {time}
                 </button>
               ))}
             </div>
