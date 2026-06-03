@@ -16,7 +16,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type RiskLevel = "green" | "yellow" | "orange" | "red";
 
@@ -75,14 +75,30 @@ const riskStyle: Record<RiskLevel, string> = {
 const defaultAttendance = (risk: RiskLevel) => risk !== "red";
 
 const quickAmounts = [10000, 20000, 30000, 50000];
-const weekdays = ["주일", "월", "화", "수", "목", "금", "토"];
-const startTimes = ["오전 10:00", "오전 11:00", "오후 1:00", "오후 2:00", "오후 7:00", "오후 8:00"];
+const weekdayLabels = ["주일", "월", "화", "수", "목", "금", "토"];
+const timePeriods = [
+  {
+    label: "오전",
+    note: "12시 전",
+    times: ["오전 9:00", "오전 10:00", "오전 11:00"],
+  },
+  {
+    label: "오후",
+    note: "12시~6시",
+    times: ["오후 1:00", "오후 2:00", "오후 3:00", "오후 5:00"],
+  },
+  {
+    label: "저녁",
+    note: "6시 이후",
+    times: ["오후 7:00", "오후 8:00", "오후 9:00"],
+  },
+];
 const placeOptions = ["교회", "구역원 가정", "기타 외부"];
 const leaderOptions = ["구역장", "직접 입력"];
 
 export default function DistrictWorshipReportPage() {
   const [worshipDate, setWorshipDate] = useState("2026-06-07");
-  const [weekday, setWeekday] = useState("주일");
+  const [timePeriod, setTimePeriod] = useState("오후");
   const [startTime, setStartTime] = useState("오후 2:00");
   const [placeType, setPlaceType] = useState("구역원 가정");
   const [customPlace, setCustomPlace] = useState("");
@@ -102,7 +118,18 @@ export default function DistrictWorshipReportPage() {
   const [isListening, setIsListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("버튼을 누르고 기도제목을 말씀하세요.");
   const [voiceError, setVoiceError] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  const selectedTimePeriod = timePeriods.find((period) => period.label === timePeriod) ?? timePeriods[1];
+  const computedWeekday = useMemo(() => {
+    const date = new Date(`${worshipDate}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+    return weekdayLabels[date.getDay()];
+  }, [worshipDate]);
 
   const counts = useMemo(() => {
     const present = Object.values(attendance).filter(Boolean).length;
@@ -111,6 +138,39 @@ export default function DistrictWorshipReportPage() {
       absent: members.length - present,
     };
   }, [attendance]);
+
+  useEffect(() => {
+    function warnBeforeUnload(event: BeforeUnloadEvent) {
+      if (!hasUnsavedChanges) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", warnBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", warnBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  function markUnsaved() {
+    setHasUnsavedChanges(true);
+    setSaveMessage("");
+  }
+
+  function confirmLeave(event: MouseEvent<HTMLAnchorElement>) {
+    if (!hasUnsavedChanges) {
+      return;
+    }
+
+    const canLeave = window.confirm("보고서가 저장되지 않을 수 있습니다. 그래도 나가시겠습니까?");
+    if (!canLeave) {
+      event.preventDefault();
+    }
+  }
 
   function toggleAttendance(memberId: number) {
     if (attendance[memberId]) {
@@ -123,6 +183,7 @@ export default function DistrictWorshipReportPage() {
 
     setAttendance((current) => ({ ...current, [memberId]: true }));
     setAbsenceNotice((current) => ({ ...current, [memberId]: null }));
+    markUnsaved();
   }
 
   function confirmAbsence(hasNotice: boolean) {
@@ -139,10 +200,12 @@ export default function DistrictWorshipReportPage() {
       [pendingAbsentMember.id]: hasNotice,
     }));
     setPendingAbsentMember(null);
+    markUnsaved();
   }
 
   function addOffering(amount: number) {
     setOffering((current) => current + amount);
+    markUnsaved();
   }
 
   function startVoiceInput() {
@@ -185,6 +248,7 @@ export default function DistrictWorshipReportPage() {
 
       const nextPrayer = transcript.trim();
       setPrayer(nextPrayer);
+      markUnsaved();
       setVoiceMessage(
         nextPrayer ? "음성을 글자로 바꾸고 있습니다." : "듣고 있습니다. 계속 말씀하세요.",
       );
@@ -221,6 +285,7 @@ export default function DistrictWorshipReportPage() {
           <Link
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-hairline-strong bg-canvas"
             href="/"
+            onClick={confirmLeave}
           >
             <ArrowLeft size={24} />
             <span className="sr-only">뒤로</span>
@@ -235,7 +300,7 @@ export default function DistrictWorshipReportPage() {
       <section className="mx-auto max-w-3xl px-4 py-5">
         <div className="rounded-xl border border-hairline bg-canvas p-5">
           <p className="text-lg text-muted">
-            {worshipDate} {weekday} {startTime}
+            {worshipDate} {computedWeekday} {startTime}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-tint-mint p-4">
@@ -264,29 +329,40 @@ export default function DistrictWorshipReportPage() {
             <span className="text-lg font-semibold">예배 일자</span>
             <input
               className="mt-2 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
-              onChange={(event) => setWorshipDate(event.target.value)}
+              onChange={(event) => {
+                setWorshipDate(event.target.value);
+                markUnsaved();
+              }}
               type="date"
               value={worshipDate}
             />
           </label>
+          <p className="mt-2 rounded-xl bg-surface-soft px-4 py-3 text-lg font-semibold">
+            선택한 날짜는 {computedWeekday}입니다.
+          </p>
 
           <div className="mt-5">
             <div className="flex items-center gap-2">
-              <CalendarDays className="text-muted" size={22} />
-              <p className="text-lg font-semibold">요일 선택</p>
+              <Clock className="text-muted" size={22} />
+              <p className="text-lg font-semibold">시간대 선택</p>
             </div>
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {weekdays.map((day) => (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {timePeriods.map((period) => (
                 <button
-                  className={`min-h-14 rounded-xl border px-2 text-xl font-semibold ${
-                    weekday === day
+                  className={`min-h-16 rounded-xl border px-3 text-xl font-semibold ${
+                    timePeriod === period.label
                       ? "border-primary bg-primary text-white"
                       : "border-hairline-strong bg-canvas"
                   }`}
-                  key={day}
-                  onClick={() => setWeekday(day)}
+                  key={period.label}
+                  onClick={() => {
+                    setTimePeriod(period.label);
+                    setStartTime(period.times[0]);
+                    markUnsaved();
+                  }}
                 >
-                  {day}
+                  <span className="block">{period.label}</span>
+                  <span className="mt-1 block text-base opacity-80">{period.note}</span>
                 </button>
               ))}
             </div>
@@ -298,7 +374,7 @@ export default function DistrictWorshipReportPage() {
               <p className="text-lg font-semibold">시작시간 선택</p>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
-              {startTimes.map((time) => (
+              {selectedTimePeriod.times.map((time) => (
                 <button
                   className={`min-h-16 rounded-xl border px-3 text-xl font-semibold ${
                     startTime === time
@@ -306,7 +382,10 @@ export default function DistrictWorshipReportPage() {
                       : "border-hairline-strong bg-canvas"
                   }`}
                   key={time}
-                  onClick={() => setStartTime(time)}
+                  onClick={() => {
+                    setStartTime(time);
+                    markUnsaved();
+                  }}
                 >
                   {time}
                 </button>
@@ -328,7 +407,10 @@ export default function DistrictWorshipReportPage() {
                       : "border-hairline-strong bg-canvas"
                   }`}
                   key={place}
-                  onClick={() => setPlaceType(place)}
+                  onClick={() => {
+                    setPlaceType(place);
+                    markUnsaved();
+                  }}
                 >
                   <Home size={24} />
                   {place}
@@ -338,7 +420,10 @@ export default function DistrictWorshipReportPage() {
             {placeType === "기타 외부" && (
               <input
                 className="mt-3 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
-                onChange={(event) => setCustomPlace(event.target.value)}
+                onChange={(event) => {
+                  setCustomPlace(event.target.value);
+                  markUnsaved();
+                }}
                 placeholder="장소를 입력하세요"
                 value={customPlace}
               />
@@ -359,7 +444,10 @@ export default function DistrictWorshipReportPage() {
                       : "border-hairline-strong bg-canvas"
                   }`}
                   key={leader}
-                  onClick={() => setLeaderType(leader)}
+                  onClick={() => {
+                    setLeaderType(leader);
+                    markUnsaved();
+                  }}
                 >
                   {leader}
                 </button>
@@ -368,7 +456,10 @@ export default function DistrictWorshipReportPage() {
             {leaderType === "직접 입력" && (
               <input
                 className="mt-3 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
-                onChange={(event) => setCustomLeader(event.target.value)}
+                onChange={(event) => {
+                  setCustomLeader(event.target.value);
+                  markUnsaved();
+                }}
                 placeholder="인도자 이름"
                 value={customLeader}
               />
@@ -460,7 +551,10 @@ export default function DistrictWorshipReportPage() {
             <input
               className="mt-2 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
               inputMode="numeric"
-              onChange={(event) => setOffering(Number(event.target.value.replace(/\D/g, "")))}
+              onChange={(event) => {
+                setOffering(Number(event.target.value.replace(/\D/g, "")));
+                markUnsaved();
+              }}
               placeholder="금액"
               type="text"
               value={offering ? offering.toLocaleString("ko-KR") : ""}
@@ -498,7 +592,10 @@ export default function DistrictWorshipReportPage() {
 
           <textarea
             className="mt-4 min-h-40 w-full rounded-xl border border-hairline-strong bg-canvas p-4 text-xl leading-8 outline-none focus:border-primary"
-            onChange={(event) => setPrayer(event.target.value)}
+            onChange={(event) => {
+              setPrayer(event.target.value);
+              markUnsaved();
+            }}
             placeholder="음성 입력 결과가 여기에 표시됩니다."
             value={prayer}
           />
@@ -506,7 +603,18 @@ export default function DistrictWorshipReportPage() {
       </section>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-hairline bg-canvas/95 px-4 py-3 shadow-[0_-8px_24px_rgba(23,23,23,0.06)] backdrop-blur">
-        <button className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-xl bg-primary text-xl font-semibold text-white">
+        {saveMessage && (
+          <p className="mb-2 rounded-xl bg-tint-mint px-4 py-2 text-center text-lg font-semibold text-success">
+            {saveMessage}
+          </p>
+        )}
+        <button
+          className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-xl bg-primary text-xl font-semibold text-white"
+          onClick={() => {
+            setHasUnsavedChanges(false);
+            setSaveMessage("저장되었습니다.");
+          }}
+        >
           <Save size={26} />
           보고서 저장
         </button>
