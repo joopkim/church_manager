@@ -10,6 +10,7 @@ import {
   Mic,
   MicOff,
   MapPin,
+  Plus,
   Save,
   UserRound,
   Users,
@@ -18,12 +19,29 @@ import {
 import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type RiskLevel = "green" | "yellow" | "orange" | "red";
+type TimePeriod = "오전" | "오후" | "저녁";
 
 type Member = {
   id: number;
   name: string;
   statusLabel: string;
   risk: RiskLevel;
+};
+
+type PrayerRequest = {
+  id: number;
+  text: string;
+  pastorOnly: boolean;
+};
+
+type ExistingReport = {
+  id: number;
+  date: string;
+  timePeriod: TimePeriod;
+  placeType: string;
+  leaderType: string;
+  offering: number;
+  prayers: PrayerRequest[];
 };
 
 type SpeechRecognitionLike = {
@@ -75,7 +93,7 @@ const defaultAttendance = (risk: RiskLevel) => risk !== "red";
 
 const quickAmounts = [10000, 20000, 30000, 50000];
 const weekdayLabels = ["주일", "월", "화", "수", "목", "금", "토"];
-const timePeriods = [
+const timePeriods: Array<{ label: TimePeriod; note: string }> = [
   {
     label: "오전",
     note: "12시 전",
@@ -91,10 +109,73 @@ const timePeriods = [
 ];
 const placeOptions = ["교회", "구역원 가정", "기타 외부"];
 const leaderOptions = ["구역장", "직접 입력"];
+const existingReports: ExistingReport[] = [
+  {
+    id: 1,
+    date: "2026-06-07",
+    timePeriod: "오후",
+    placeType: "구역원 가정",
+    leaderType: "구역장",
+    offering: 50000,
+    prayers: [
+      {
+        id: 101,
+        text: "최지우 성도 건강 회복과 새가족 정착을 위해 기도 요청이 있었습니다.",
+        pastorOnly: false,
+      },
+    ],
+  },
+  {
+    id: 2,
+    date: "2026-05-31",
+    timePeriod: "저녁",
+    placeType: "교회",
+    leaderType: "구역장",
+    offering: 30000,
+    prayers: [
+      {
+        id: 102,
+        text: "구역원 가정예배 회복과 자녀들의 신앙생활을 위해 함께 기도했습니다.",
+        pastorOnly: false,
+      },
+    ],
+  },
+];
+
+function getEntryDefaults() {
+  const now = new Date();
+  const hour = now.getHours();
+  const defaultTimePeriod: TimePeriod = hour < 12 ? "오전" : hour < 18 ? "오후" : "저녁";
+
+  return {
+    date: [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-"),
+    timePeriod: defaultTimePeriod,
+  };
+}
+
+function createPrayerRequest(): PrayerRequest {
+  return {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    text: "",
+    pastorOnly: false,
+  };
+}
+
+function createEmptyPrayerRequest(id: number): PrayerRequest {
+  return {
+    id,
+    text: "",
+    pastorOnly: false,
+  };
+}
 
 export default function DistrictWorshipReportPage() {
-  const [worshipDate, setWorshipDate] = useState("2026-06-07");
-  const [timePeriod, setTimePeriod] = useState("오후");
+  const [worshipDate, setWorshipDate] = useState("");
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("오후");
   const [placeType, setPlaceType] = useState("구역원 가정");
   const [customPlace, setCustomPlace] = useState("");
   const [leaderType, setLeaderType] = useState("구역장");
@@ -109,7 +190,11 @@ export default function DistrictWorshipReportPage() {
   );
   const [pendingAbsentMember, setPendingAbsentMember] = useState<Member | null>(null);
   const [offering, setOffering] = useState(0);
-  const [prayer, setPrayer] = useState("");
+  const [prayers, setPrayers] = useState<PrayerRequest[]>(() => [createEmptyPrayerRequest(1)]);
+  const [activePrayerId, setActivePrayerId] = useState<number | null>(1);
+  const [hasWarnedEmptyPrayer, setHasWarnedEmptyPrayer] = useState(false);
+  const [duplicateReport, setDuplicateReport] = useState<ExistingReport | null>(null);
+  const [pendingDuplicateDate, setPendingDuplicateDate] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("버튼을 누르고 기도제목을 말씀하세요.");
   const [voiceError, setVoiceError] = useState("");
@@ -124,7 +209,7 @@ export default function DistrictWorshipReportPage() {
     }
     return weekdayLabels[date.getDay()];
   }, [worshipDate]);
-  const dayKind = computedWeekday === "주일" ? "주일" : "평일";
+  const dayKind = computedWeekday ? (computedWeekday === "주일" ? "주일" : "평일") : "";
 
   const counts = useMemo(() => {
     const present = Object.values(attendance).filter(Boolean).length;
@@ -133,6 +218,18 @@ export default function DistrictWorshipReportPage() {
       absent: members.length - present,
     };
   }, [attendance]);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      const defaults = getEntryDefaults();
+      setWorshipDate(defaults.date);
+      setTimePeriod(defaults.timePeriod);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, []);
 
   useEffect(() => {
     function warnBeforeUnload(event: BeforeUnloadEvent) {
@@ -154,6 +251,77 @@ export default function DistrictWorshipReportPage() {
   function markUnsaved() {
     setHasUnsavedChanges(true);
     setSaveMessage("");
+  }
+
+  function updatePrayer(prayerId: number, updates: Partial<PrayerRequest>) {
+    setPrayers((current) =>
+      current.map((item) => (item.id === prayerId ? { ...item, ...updates } : item)),
+    );
+    setHasWarnedEmptyPrayer(false);
+    markUnsaved();
+  }
+
+  function addPrayer() {
+    const nextPrayer = createPrayerRequest();
+    setPrayers((current) => [...current, nextPrayer]);
+    setActivePrayerId(nextPrayer.id);
+    setHasWarnedEmptyPrayer(false);
+    markUnsaved();
+  }
+
+  function removePrayer(prayerId: number) {
+    const isOnlyPrayer = prayers.length === 1;
+
+    setPrayers((current) => {
+      if (current.length === 1) {
+        return current.map((item) => (item.id === prayerId ? { ...item, text: "" } : item));
+      }
+
+      return current.filter((item) => item.id !== prayerId);
+    });
+    setActivePrayerId((current) => {
+      if (isOnlyPrayer) {
+        return prayerId;
+      }
+
+      return current === prayerId ? null : current;
+    });
+    setHasWarnedEmptyPrayer(false);
+    markUnsaved();
+  }
+
+  function changeWorshipDate(nextDate: string) {
+    const existingReport = existingReports.find((report) => report.date === nextDate);
+
+    if (existingReport) {
+      setPendingDuplicateDate(nextDate);
+      setDuplicateReport(existingReport);
+      return;
+    }
+
+    setWorshipDate(nextDate);
+    markUnsaved();
+  }
+
+  function loadExistingReport(report: ExistingReport) {
+    setWorshipDate(report.date);
+    setTimePeriod(report.timePeriod);
+    setPlaceType(report.placeType);
+    setLeaderType(report.leaderType);
+    setOffering(report.offering);
+    setPrayers(report.prayers.map((prayer) => ({ ...prayer })));
+    setActivePrayerId(report.prayers[0]?.id ?? null);
+    setDuplicateReport(null);
+    setPendingDuplicateDate("");
+    setHasWarnedEmptyPrayer(false);
+    markUnsaved();
+  }
+
+  function createNewReportForDuplicateDate() {
+    setWorshipDate(pendingDuplicateDate);
+    setDuplicateReport(null);
+    setPendingDuplicateDate("");
+    markUnsaved();
   }
 
   function confirmLeave(event: MouseEvent<HTMLAnchorElement>) {
@@ -205,8 +373,16 @@ export default function DistrictWorshipReportPage() {
 
   function startVoiceInput() {
     const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    const targetPrayerId = activePrayerId ?? prayers[0]?.id;
 
     setVoiceError("");
+
+    if (!targetPrayerId) {
+      setVoiceError("기도제목 입력 칸을 먼저 추가해 주세요.");
+      return;
+    }
+
+    setActivePrayerId(targetPrayerId);
 
     if (!Recognition) {
       setVoiceMessage("이 브라우저는 음성 입력을 지원하지 않습니다.");
@@ -242,8 +418,7 @@ export default function DistrictWorshipReportPage() {
       }
 
       const nextPrayer = transcript.trim();
-      setPrayer(nextPrayer);
-      markUnsaved();
+      updatePrayer(targetPrayerId, { text: nextPrayer });
       setVoiceMessage(
         nextPrayer ? "음성을 글자로 바꾸고 있습니다." : "듣고 있습니다. 계속 말씀하세요.",
       );
@@ -251,8 +426,9 @@ export default function DistrictWorshipReportPage() {
     };
     recognition.onend = () => {
       setIsListening(false);
+      const hasPrayer = prayers.some((item) => item.text.trim());
       setVoiceMessage((current) =>
-        prayer ? "필요하면 다시 눌러 추가로 말씀하세요." : current,
+        hasPrayer ? "필요하면 다시 눌러 추가로 말씀하세요." : current,
       );
     };
 
@@ -271,6 +447,28 @@ export default function DistrictWorshipReportPage() {
   function stopVoiceInput() {
     recognitionRef.current?.stop();
     setIsListening(false);
+  }
+
+  function saveReport() {
+    const attendanceConfirmed = window.confirm(
+      `${counts.present}명 출석/${counts.absent}명 결석이 맞습니까?`,
+    );
+
+    if (!attendanceConfirmed) {
+      return;
+    }
+
+    const hasPrayer = prayers.some((item) => item.text.trim());
+    if (!hasPrayer && !hasWarnedEmptyPrayer) {
+      setHasWarnedEmptyPrayer(true);
+      setVoiceError("기도제목을 보내 주세요. 없으면 다시 저장을 눌러 진행할 수 있습니다.");
+      return;
+    }
+
+    setHasUnsavedChanges(false);
+    setHasWarnedEmptyPrayer(false);
+    setVoiceError("");
+    setSaveMessage("저장되었습니다.");
   }
 
   return (
@@ -295,7 +493,9 @@ export default function DistrictWorshipReportPage() {
       <section className="mx-auto max-w-3xl px-4 py-5">
         <div className="rounded-xl border border-hairline bg-canvas p-5">
           <p className="text-lg text-muted">
-            {worshipDate} {computedWeekday} · {dayKind} {timePeriod}
+            {worshipDate
+              ? `${worshipDate} ${computedWeekday} · ${dayKind} ${timePeriod}`
+              : "예배 일자를 확인하고 있습니다."}
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-tint-mint p-4">
@@ -325,8 +525,10 @@ export default function DistrictWorshipReportPage() {
             <input
               className="mt-2 h-16 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-2xl font-semibold outline-none focus:border-primary"
               onChange={(event) => {
-                setWorshipDate(event.target.value);
-                markUnsaved();
+                changeWorshipDate(event.target.value);
+              }}
+              onInput={(event) => {
+                changeWorshipDate(event.currentTarget.value);
               }}
               type="date"
               value={worshipDate}
@@ -533,7 +735,7 @@ export default function DistrictWorshipReportPage() {
             <Mic className="text-primary" size={28} />
             <div>
               <h2 className="text-2xl font-semibold">기도 제목</h2>
-              <p className="mt-1 text-base text-muted">긴 내용은 음성으로 남깁니다.</p>
+              <p className="mt-1 text-base text-muted">여러 기도제목을 나누어 남길 수 있습니다.</p>
             </div>
           </div>
 
@@ -556,15 +758,69 @@ export default function DistrictWorshipReportPage() {
             </p>
           )}
 
-          <textarea
-            className="mt-4 min-h-40 w-full rounded-xl border border-hairline-strong bg-canvas p-4 text-xl leading-8 outline-none focus:border-primary"
-            onChange={(event) => {
-              setPrayer(event.target.value);
-              markUnsaved();
-            }}
-            placeholder="음성 입력 결과가 여기에 표시됩니다."
-            value={prayer}
-          />
+          <div className="mt-4 grid gap-4">
+            {prayers.map((prayer, index) => {
+              const isActive = activePrayerId === prayer.id;
+
+              return (
+                <div
+                  className={`rounded-xl border p-4 ${
+                    isActive ? "border-primary bg-tint-sky" : "border-hairline bg-canvas"
+                  }`}
+                  key={prayer.id}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      className="text-left text-xl font-semibold"
+                      onClick={() => setActivePrayerId(prayer.id)}
+                    >
+                      기도제목 {index + 1}
+                    </button>
+                    <button
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-hairline-strong bg-canvas"
+                      onClick={() => removePrayer(prayer.id)}
+                    >
+                      <X size={22} />
+                      <span className="sr-only">기도제목 삭제</span>
+                    </button>
+                  </div>
+
+                  <label className="mt-3 flex min-h-14 items-center justify-between gap-3 rounded-xl border border-hairline-strong bg-canvas px-4">
+                    <span>
+                      <span className="block text-lg font-semibold">목회자만</span>
+                      <span className="block text-base text-muted">
+                        해제 시 전성도 공개
+                      </span>
+                    </span>
+                    <input
+                      checked={prayer.pastorOnly}
+                      className="h-7 w-7 accent-primary"
+                      onChange={(event) =>
+                        updatePrayer(prayer.id, { pastorOnly: event.target.checked })
+                      }
+                      type="checkbox"
+                    />
+                  </label>
+
+                  <textarea
+                    className="mt-3 min-h-36 w-full rounded-xl border border-hairline-strong bg-canvas p-4 text-xl leading-8 outline-none focus:border-primary"
+                    onChange={(event) => updatePrayer(prayer.id, { text: event.target.value })}
+                    onFocus={() => setActivePrayerId(prayer.id)}
+                    placeholder="기도제목을 입력하거나 음성으로 남기세요."
+                    value={prayer.text}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            className="mt-4 flex h-16 w-full items-center justify-center gap-2 rounded-xl border border-hairline-strong bg-canvas text-xl font-semibold"
+            onClick={addPrayer}
+          >
+            <Plus size={24} />
+            기도제목 추가
+          </button>
         </section>
       </section>
 
@@ -576,15 +832,49 @@ export default function DistrictWorshipReportPage() {
         )}
         <button
           className="inline-flex h-16 w-full items-center justify-center gap-3 rounded-xl bg-primary text-xl font-semibold text-white"
-          onClick={() => {
-            setHasUnsavedChanges(false);
-            setSaveMessage("저장되었습니다.");
-          }}
+          onClick={saveReport}
         >
           <Save size={26} />
           보고서 저장
         </button>
       </div>
+
+      {duplicateReport && (
+        <div className="fixed inset-0 z-30 flex items-end bg-black/40 px-4 py-4">
+          <section className="mx-auto w-full max-w-3xl rounded-2xl bg-canvas p-5 shadow-2xl">
+            <p className="text-base font-semibold text-primary">같은 날짜 보고서 확인</p>
+            <h2 className="mt-2 text-3xl font-semibold leading-tight">
+              {pendingDuplicateDate}에 이미 작성된 보고서가 있습니다.
+            </h2>
+            <p className="mt-3 text-lg leading-8 text-muted">
+              기존 보고서를 불러와 수정하거나, 같은 날짜의 새 보고서로 계속 작성할 수 있습니다.
+            </p>
+            <div className="mt-5 grid gap-3">
+              <button
+                className="min-h-16 rounded-xl bg-primary px-4 text-xl font-semibold text-white"
+                onClick={() => loadExistingReport(duplicateReport)}
+              >
+                기존 보고서 불러오기
+              </button>
+              <button
+                className="min-h-16 rounded-xl border border-hairline-strong bg-canvas px-4 text-xl font-semibold"
+                onClick={createNewReportForDuplicateDate}
+              >
+                새 보고서로 작성
+              </button>
+              <button
+                className="min-h-14 rounded-xl border border-hairline-strong bg-canvas px-4 text-xl font-semibold"
+                onClick={() => {
+                  setDuplicateReport(null);
+                  setPendingDuplicateDate("");
+                }}
+              >
+                취소
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {pendingAbsentMember && (
         <div className="fixed inset-0 z-30 flex items-end bg-black/40 px-4 py-4">
