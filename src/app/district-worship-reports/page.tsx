@@ -139,11 +139,11 @@ export default function DistrictWorshipReportsPage() {
       <header className="sticky top-0 z-10 border-b border-hairline bg-canvas/95 px-4 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Link
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-hairline-strong bg-canvas px-3 text-base font-semibold"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-hairline-strong bg-canvas"
             href="/"
           >
             <Home size={23} />
-            홈
+            <span className="sr-only">홈</span>
           </Link>
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-primary">1구역</p>
@@ -153,9 +153,9 @@ export default function DistrictWorshipReportsPage() {
       </header>
 
       <section className="mx-auto max-w-3xl px-4 py-5">
-        <div className="mb-4 rounded-xl border border-hairline bg-canvas p-4">
-          <div className="grid grid-cols-[1fr_auto] items-end gap-3">
-            <label className="block min-w-0">
+        <div className="mb-4 grid grid-cols-[1fr_auto] gap-3">
+          <div className="rounded-xl border border-hairline bg-canvas p-4">
+            <label className="block">
               <span className="text-base font-semibold text-muted">년도 선택</span>
               <select
                 className="mt-2 h-14 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-xl font-semibold outline-none focus:border-primary"
@@ -171,8 +171,11 @@ export default function DistrictWorshipReportsPage() {
                 <option value="2024">2024년</option>
               </select>
             </label>
+          </div>
+          <div className="rounded-xl border border-hairline bg-surface-soft p-4">
+            <span className="block text-base font-semibold text-muted">보고서 선택</span>
             <button
-              className={`flex h-14 min-w-24 items-center justify-center gap-2 rounded-xl px-4 text-lg font-semibold ${
+              className={`mt-2 flex h-14 min-w-24 items-center justify-center gap-2 rounded-xl px-4 text-lg font-semibold ${
                 isSelecting ? "bg-error text-white" : "border border-hairline-strong bg-canvas"
               }`}
               onClick={toggleSelectMode}

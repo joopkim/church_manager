@@ -278,12 +278,12 @@ export default function DistrictWorshipReportPage() {
       <header className="sticky top-0 z-10 border-b border-hairline bg-canvas/95 px-4 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Link
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-hairline-strong bg-canvas px-3 text-base font-semibold"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-hairline-strong bg-canvas"
             href="/"
             onClick={confirmLeave}
           >
             <Home size={23} />
-            홈
+            <span className="sr-only">홈</span>
           </Link>
           <div className="min-w-0">
             <p className="text-base font-semibold text-primary">1구역</p>
