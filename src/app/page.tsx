@@ -264,19 +264,25 @@ export default function Home() {
                         <dd className="mt-1 font-semibold">{row.attendance}</dd>
                       </div>
                     </dl>
-                    <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="mt-5 grid grid-cols-3 gap-2">
                       <Link
-                        className="flex h-14 items-center justify-center rounded-xl border border-hairline-strong bg-canvas text-lg font-semibold"
-                        href="/district-worship-report"
+                        className="flex h-14 items-center justify-center rounded-xl border border-hairline-strong bg-canvas text-base font-semibold"
+                        href="/district-worship-reports"
                       >
-                        출석 체크
+                        목록
                       </Link>
                       <Link
-                        className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-primary text-lg font-semibold text-white"
+                        className="flex h-14 items-center justify-center rounded-xl border border-hairline-strong bg-canvas text-base font-semibold"
                         href="/district-worship-report"
                       >
-                        <Mic size={22} />
-                        음성 메모
+                        작성
+                      </Link>
+                      <Link
+                        className="inline-flex h-14 items-center justify-center gap-1 rounded-xl bg-primary text-base font-semibold text-white"
+                        href="/district-worship-report"
+                      >
+                        <Mic size={20} />
+                        음성
                       </Link>
                     </div>
                   </article>
@@ -327,23 +333,24 @@ export default function Home() {
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-hairline bg-canvas/95 px-3 py-2 shadow-[0_-8px_24px_rgba(23,23,23,0.06)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-4 gap-1">
           {[
-            { label: "홈", icon: HomeIcon, active: true },
-            { label: "구역", icon: MapPinned },
-            { label: "모임", icon: CalendarCheck },
-            { label: "성도", icon: UserRound },
+            { label: "홈", icon: HomeIcon, active: true, href: "/" },
+            { label: "구역", icon: MapPinned, href: "#" },
+            { label: "모임", icon: CalendarCheck, href: "/district-worship-reports" },
+            { label: "성도", icon: UserRound, href: "#" },
           ].map((item) => {
             const Icon = item.icon;
 
             return (
-              <button
+              <Link
                 className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-base font-semibold ${
                   item.active ? "bg-surface text-primary" : "text-muted"
                 }`}
+                href={item.href}
                 key={item.label}
               >
                 <Icon size={24} />
                 {item.label}
-              </button>
+              </Link>
             );
           })}
         </div>
