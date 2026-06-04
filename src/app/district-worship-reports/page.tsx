@@ -9,7 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type Report = {
   id: number;
@@ -98,21 +98,6 @@ export default function DistrictWorshipReportsPage() {
   const singleSelectedReport = selectedCount === 1
     ? reports.find((report) => report.id === selectedIds[0])
     : null;
-  const totalAttendance = useMemo(
-    () =>
-      reports.reduce(
-        (total, report) => ({
-          present: total.present + report.present,
-          absent: total.absent + report.absent,
-        }),
-        { present: 0, absent: 0 },
-      ),
-    [reports],
-  );
-  const totalOffering = useMemo(
-    () => reports.reduce((total, report) => total + report.offering, 0),
-    [reports],
-  );
 
   function toggleSelection(reportId: number) {
     setSelectedIds((current) =>
@@ -170,28 +155,8 @@ export default function DistrictWorshipReportsPage() {
       </header>
 
       <section className="mx-auto max-w-3xl px-4 py-5">
-        <div className="rounded-xl border border-hairline bg-canvas p-5">
-          <p className="text-lg text-muted">최근 보고서 {reports.length}개</p>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-tint-mint p-4">
-              <p className="text-base text-muted">누적 출석</p>
-              <p className="mt-1 text-3xl font-semibold">{totalAttendance.present}</p>
-            </div>
-            <div className="rounded-xl bg-tint-rose p-4">
-              <p className="text-base text-muted">누적 결석</p>
-              <p className="mt-1 text-3xl font-semibold">{totalAttendance.absent}</p>
-            </div>
-            <div className="rounded-xl bg-tint-yellow p-4">
-              <p className="text-base text-muted">헌금</p>
-              <p className="mt-1 text-2xl font-semibold">
-                {totalOffering.toLocaleString("ko-KR")}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {isSelecting && (
-          <div className="mt-4 rounded-xl border border-hairline bg-canvas p-4">
+          <div className="rounded-xl border border-hairline bg-canvas p-4">
             <p className="text-xl font-semibold">{selectedCount}개 선택됨</p>
             <button
               className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-error text-xl font-semibold text-white disabled:bg-hairline-strong"
@@ -204,11 +169,11 @@ export default function DistrictWorshipReportsPage() {
           </div>
         )}
 
-        <section className="mt-5 overflow-hidden rounded-xl border border-hairline bg-canvas">
-          <div className="grid grid-cols-[1fr_84px_92px] border-b border-hairline bg-surface-soft px-4 py-3 text-base font-semibold text-muted">
-            <span>날짜</span>
+        <section className={`${isSelecting ? "mt-4" : ""} overflow-hidden rounded-xl border border-hairline bg-canvas`}>
+          <div className="grid grid-cols-[1fr_72px_86px] border-b border-hairline bg-surface-soft px-3 py-2 text-sm font-semibold text-muted">
+            <span>날짜/수정</span>
             <span className="text-center">출결</span>
-            <span className="text-right">헌금</span>
+            <span className="text-right">헌금/기도</span>
           </div>
 
           <div className="divide-y divide-hairline-soft">
@@ -216,40 +181,60 @@ export default function DistrictWorshipReportsPage() {
               const selected = selectedIds.includes(report.id);
 
               return (
-                <button
-                  className={`grid min-h-24 w-full grid-cols-[1fr_84px_92px] items-center gap-2 px-4 py-4 text-left ${
+                <div
+                  className={`grid min-h-16 w-full grid-cols-[1fr_72px_86px] items-center gap-2 px-3 py-3 ${
                     selected ? "bg-tint-sky ring-4 ring-inset ring-primary/20" : "bg-canvas"
                   }`}
                   key={report.id}
-                  onClick={() => {
-                    if (isSelecting) {
-                      toggleSelection(report.id);
-                      return;
-                    }
-
-                    setPrayerReport(report);
-                  }}
                 >
-                  <span className="min-w-0">
-                    <span className="block text-xl font-semibold leading-7">
-                      {formatDate(report.date)}
-                    </span>
-                    <span className="mt-1 block text-base leading-6 text-muted">
-                      {report.dayKind} {report.timePeriod} · {report.status}
-                    </span>
-                  </span>
+                  {isSelecting ? (
+                    <button
+                      className="min-w-0 text-left"
+                      onClick={() => toggleSelection(report.id)}
+                    >
+                      <span className="block text-base font-semibold leading-6">
+                        {formatDate(report.date)}
+                      </span>
+                    </button>
+                  ) : (
+                    <Link
+                      className="min-w-0 text-left"
+                      href="/district-worship-report"
+                    >
+                      <span className="block text-base font-semibold leading-6">
+                        {formatDate(report.date)}
+                      </span>
+                    </Link>
+                  )}
 
-                  <span className="text-center">
-                    <span className="block text-2xl font-semibold text-success">
+                  <button
+                    className="text-center"
+                    onClick={() => {
+                      if (isSelecting) {
+                        toggleSelection(report.id);
+                      }
+                    }}
+                  >
+                    <span className="block text-lg font-semibold text-success">
                       {report.present}
                     </span>
-                    <span className="text-base text-error">/{report.absent}</span>
-                  </span>
+                    <span className="text-sm text-error">/{report.absent}</span>
+                  </button>
 
-                  <span className="text-right text-xl font-semibold">
+                  <button
+                    className="text-right text-base font-semibold"
+                    onClick={() => {
+                      if (isSelecting) {
+                        toggleSelection(report.id);
+                        return;
+                      }
+
+                      setPrayerReport(report);
+                    }}
+                  >
                     {report.offering.toLocaleString("ko-KR")}
-                  </span>
-                </button>
+                  </button>
+                </div>
               );
             })}
           </div>
