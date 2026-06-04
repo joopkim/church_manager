@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import {
-  ArrowLeft,
   CheckSquare,
   Edit3,
   FilePlus2,
+  Home,
   Trash2,
   X,
 } from "lucide-react";
@@ -139,46 +139,48 @@ export default function DistrictWorshipReportsPage() {
       <header className="sticky top-0 z-10 border-b border-hairline bg-canvas/95 px-4 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Link
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-hairline-strong bg-canvas"
+            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-hairline-strong bg-canvas px-3 text-base font-semibold"
             href="/"
           >
-            <ArrowLeft size={24} />
-            <span className="sr-only">뒤로</span>
+            <Home size={23} />
+            홈
           </Link>
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-primary">1구역</p>
             <h1 className="text-2xl font-semibold leading-8">저장된 보고서</h1>
           </div>
-          <button
-            className={`flex h-12 min-w-20 items-center justify-center gap-2 rounded-xl px-3 text-base font-semibold ${
-              isSelecting ? "bg-error text-white" : "border border-hairline-strong bg-canvas"
-            }`}
-            onClick={toggleSelectMode}
-          >
-            {isSelecting ? <X size={22} /> : <CheckSquare size={22} />}
-            {isSelecting ? "취소" : "선택"}
-          </button>
         </div>
       </header>
 
       <section className="mx-auto max-w-3xl px-4 py-5">
         <div className="mb-4 rounded-xl border border-hairline bg-canvas p-4">
-          <label className="block">
-            <span className="text-base font-semibold text-muted">년도 선택</span>
-            <select
-              className="mt-2 h-14 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-xl font-semibold outline-none focus:border-primary"
-              onChange={(event) => {
-                setSelectedYear(event.target.value);
-                setSelectedIds([]);
-                setIsSelecting(false);
-              }}
-              value={selectedYear}
+          <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+            <label className="block min-w-0">
+              <span className="text-base font-semibold text-muted">년도 선택</span>
+              <select
+                className="mt-2 h-14 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-xl font-semibold outline-none focus:border-primary"
+                onChange={(event) => {
+                  setSelectedYear(event.target.value);
+                  setSelectedIds([]);
+                  setIsSelecting(false);
+                }}
+                value={selectedYear}
+              >
+                <option value="2026">2026년</option>
+                <option value="2025">2025년</option>
+                <option value="2024">2024년</option>
+              </select>
+            </label>
+            <button
+              className={`flex h-14 min-w-24 items-center justify-center gap-2 rounded-xl px-4 text-lg font-semibold ${
+                isSelecting ? "bg-error text-white" : "border border-hairline-strong bg-canvas"
+              }`}
+              onClick={toggleSelectMode}
             >
-              <option value="2026">2026년</option>
-              <option value="2025">2025년</option>
-              <option value="2024">2024년</option>
-            </select>
-          </label>
+              {isSelecting ? <X size={22} /> : <CheckSquare size={22} />}
+              {isSelecting ? "취소" : "선택"}
+            </button>
+          </div>
         </div>
 
         {isSelecting && (
