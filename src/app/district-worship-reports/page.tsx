@@ -20,6 +20,7 @@ type Report = {
   leader: string;
   present: number;
   absent: number;
+  capacity: number;
   status: "저장됨" | "작성중";
   offering: number;
   prayer: string;
@@ -35,6 +36,7 @@ const initialReports: Report[] = [
     leader: "구역장",
     present: 7,
     absent: 1,
+    capacity: 8,
     status: "저장됨",
     offering: 50000,
     prayer: "최지우 성도 건강 회복과 새가족 정착을 위해 기도 요청이 있었습니다.",
@@ -48,6 +50,7 @@ const initialReports: Report[] = [
     leader: "구역장",
     present: 6,
     absent: 2,
+    capacity: 8,
     status: "저장됨",
     offering: 30000,
     prayer: "구역원 가정예배 회복과 자녀들의 신앙생활을 위해 함께 기도했습니다.",
@@ -61,6 +64,7 @@ const initialReports: Report[] = [
     leader: "김민준",
     present: 5,
     absent: 3,
+    capacity: 8,
     status: "작성중",
     offering: 20000,
     prayer: "장기 결석 성도 연락과 구역 모임 장소 조정을 위해 기도하기로 했습니다.",
@@ -74,6 +78,7 @@ const initialReports: Report[] = [
     leader: "구역장",
     present: 8,
     absent: 0,
+    capacity: 8,
     status: "저장됨",
     offering: 70000,
     prayer: "감사 제목이 많았고 다음 모임에 새가족을 초대하기로 했습니다.",
@@ -90,6 +95,7 @@ function formatDate(date: string) {
 
 export default function DistrictWorshipReportsPage() {
   const [reports, setReports] = useState(initialReports);
+  const [selectedYear, setSelectedYear] = useState("2026");
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [prayerReport, setPrayerReport] = useState<Report | null>(null);
@@ -98,6 +104,7 @@ export default function DistrictWorshipReportsPage() {
   const singleSelectedReport = selectedCount === 1
     ? reports.find((report) => report.id === selectedIds[0])
     : null;
+  const filteredReports = reports.filter((report) => report.date.startsWith(selectedYear));
 
   function toggleSelection(reportId: number) {
     setSelectedIds((current) =>
@@ -155,6 +162,25 @@ export default function DistrictWorshipReportsPage() {
       </header>
 
       <section className="mx-auto max-w-3xl px-4 py-5">
+        <div className="mb-4 rounded-xl border border-hairline bg-canvas p-4">
+          <label className="block">
+            <span className="text-base font-semibold text-muted">년도 선택</span>
+            <select
+              className="mt-2 h-14 w-full rounded-xl border border-hairline-strong bg-canvas px-4 text-xl font-semibold outline-none focus:border-primary"
+              onChange={(event) => {
+                setSelectedYear(event.target.value);
+                setSelectedIds([]);
+                setIsSelecting(false);
+              }}
+              value={selectedYear}
+            >
+              <option value="2026">2026년</option>
+              <option value="2025">2025년</option>
+              <option value="2024">2024년</option>
+            </select>
+          </label>
+        </div>
+
         {isSelecting && (
           <div className="rounded-xl border border-hairline bg-canvas p-4">
             <p className="text-xl font-semibold">{selectedCount}개 선택됨</p>
@@ -170,19 +196,19 @@ export default function DistrictWorshipReportsPage() {
         )}
 
         <section className={`${isSelecting ? "mt-4" : ""} overflow-hidden rounded-xl border border-hairline bg-canvas`}>
-          <div className="grid grid-cols-[1fr_72px_86px] border-b border-hairline bg-surface-soft px-3 py-2 text-sm font-semibold text-muted">
+          <div className="grid grid-cols-[1fr_78px_86px] border-b border-hairline bg-surface-soft px-3 py-2 text-sm font-semibold text-muted">
             <span>날짜/수정</span>
             <span className="text-center">출결</span>
             <span className="text-right">헌금/기도</span>
           </div>
 
           <div className="divide-y divide-hairline-soft">
-            {reports.map((report) => {
+            {filteredReports.map((report) => {
               const selected = selectedIds.includes(report.id);
 
               return (
                 <div
-                  className={`grid min-h-16 w-full grid-cols-[1fr_72px_86px] items-center gap-2 px-3 py-3 ${
+                  className={`grid min-h-16 w-full grid-cols-[1fr_78px_86px] items-center gap-2 px-3 py-3 ${
                     selected ? "bg-tint-sky ring-4 ring-inset ring-primary/20" : "bg-canvas"
                   }`}
                   key={report.id}
@@ -215,10 +241,9 @@ export default function DistrictWorshipReportsPage() {
                       }
                     }}
                   >
-                    <span className="block text-lg font-semibold text-success">
-                      {report.present}
+                    <span className="whitespace-nowrap text-base font-semibold text-foreground">
+                      {report.present}/{report.capacity}
                     </span>
-                    <span className="text-sm text-error">/{report.absent}</span>
                   </button>
 
                   <button
@@ -282,7 +307,7 @@ export default function DistrictWorshipReportsPage() {
                   {formatDate(prayerReport.date)}
                 </h2>
                 <p className="mt-1 text-lg text-muted">
-                  출석 {prayerReport.present}명 · 결석 {prayerReport.absent}명 · 헌금{" "}
+                  출석 {prayerReport.present}/{prayerReport.capacity}명 · 결석 {prayerReport.absent}명 · 헌금{" "}
                   {prayerReport.offering.toLocaleString("ko-KR")}원
                 </p>
               </div>
